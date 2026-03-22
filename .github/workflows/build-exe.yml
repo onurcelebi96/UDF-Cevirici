@@ -8,15 +8,19 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Python
+    - name: Setup Python (${{ matrix.arch }})
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.10'
+        architecture: ${{ matrix.arch }}
 
     - name: Install dependencies
       run: |
@@ -29,5 +33,5 @@ jobs:
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
-        name: UDF-Cevirici
+        name: UDF-Cevirici-${{ matrix.arch }}
         path: dist/UDF-Cevirici.exe
