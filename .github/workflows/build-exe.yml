@@ -8,23 +8,20 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        arch: [x64, x86]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Python (${{ matrix.arch }})
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
-        architecture: ${{ matrix.arch }}
+        python-version: '3.9'
+        architecture: 'x64'
 
     - name: Install dependencies
       run: |
-        pip install python-docx PyMuPDF Pillow reportlab pyinstaller
+        pip install python-docx PyMuPDF==1.23.26 Pillow reportlab pyinstaller
 
     - name: Build EXE
       run: |
@@ -33,5 +30,5 @@ jobs:
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
-        name: UDF-Cevirici-${{ matrix.arch }}
+        name: UDF-Cevirici
         path: dist/UDF-Cevirici.exe
