@@ -362,23 +362,34 @@ class UDFConverterApp:
 
     def _do_convert(self):
         op = self.selected_op
-        filename, _ = os.path.splitext(self.selected_file)
+        input_file = os.path.normpath(self.selected_file)
+        filename, _ = os.path.splitext(input_file)
         op_obj = next((o for o in OPERATIONS if o["id"] == op), None)
         out_file = filename + (op_obj["ext_out"] if op_obj else ".out")
 
         try:
+            # Pre-validate file
+            if not os.path.isfile(input_file):
+                raise FileNotFoundError(f"Dosya bulunamadi: {input_file}")
+
+            # Try to read the file to verify access
+            with open(input_file, 'rb') as f:
+                header = f.read(4)
+
             if op == "udf_to_docx":
-                udf_to_docx(self.selected_file, out_file)
+                udf_to_docx(input_file, out_file)
             elif op == "docx_to_udf":
-                docx_to_udf(self.selected_file, out_file)
+                docx_to_udf(input_file, out_file)
             elif op == "udf_to_pdf":
-                udf_to_pdf(self.selected_file, out_file)
+                udf_to_pdf(input_file, out_file)
             elif op == "scanned_pdf_to_udf":
-                scanned_pdf_to_udf(self.selected_file, out_file)
+                scanned_pdf_to_udf(input_file, out_file)
 
             self.root.after(0, self._on_success, out_file)
         except Exception as e:
-            self.root.after(0, self._on_error, str(e))
+            import traceback
+            error_detail = f"{e}\n\nDetay:\n{traceback.format_exc()}"
+            self.root.after(0, self._on_error, error_detail)
 
     def _on_success(self, out_file):
         self.progress.stop()

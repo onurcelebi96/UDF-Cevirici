@@ -16,7 +16,7 @@ def is_zip_file(file_path):
     try:
         with zipfile.ZipFile(file_path, 'r') as z:
             return True
-    except zipfile.BadZipFile:
+    except Exception:
         return False
 
 def get_alignment_style(alignment_value):
@@ -116,8 +116,8 @@ def udf_to_docx(udf_file, docx_file):
         try:
             tree = ET.parse(udf_file, parser=ET.XMLParser(encoding='utf-8'))
             root = tree.getroot()
-        except ET.ParseError:
-            raise Exception(f"The file {udf_file} is neither a valid ZIP nor a valid XML file.")
+        except Exception as e:
+            raise Exception(f"Dosya okunamadi: {udf_file}\nHata: {e}")
 
     if root is None:
         raise Exception("Failed to parse the file.")
