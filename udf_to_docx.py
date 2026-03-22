@@ -110,20 +110,17 @@ def udf_to_docx(udf_file, docx_file):
                     tree = ET.parse(content_file, parser=ET.XMLParser(encoding='utf-8'))
                     root = tree.getroot()
             else:
-                print("The 'content.xml' file could not be found in the UDF file.")
-                exit()
+                raise Exception("The 'content.xml' file could not be found in the UDF file.")
     else:
         # Process as an XML file directly
         try:
             tree = ET.parse(udf_file, parser=ET.XMLParser(encoding='utf-8'))
             root = tree.getroot()
         except ET.ParseError:
-            print(f"The file {udf_file} is neither a valid ZIP nor a valid XML file.")
-            exit()
+            raise Exception(f"The file {udf_file} is neither a valid ZIP nor a valid XML file.")
 
     if root is None:
-        print("Failed to parse the file.")
-        exit()
+        raise Exception("Failed to parse the file.")
 
     # Create a new Word document
     document = Document()
@@ -141,8 +138,7 @@ def udf_to_docx(udf_file, docx_file):
         if content_text.startswith('<![CDATA[') and content_text.endswith(']]>'):
             content_text = content_text[9:-3]
     else:
-        print("'content' could not be found in the XML.")
-        exit()
+        raise Exception("'content' could not be found in the XML.")
 
     # Extract page properties
     properties_element = root.find('properties')
@@ -579,8 +575,7 @@ def udf_to_docx(udf_file, docx_file):
                                             print(f"Error processing image in table: {e}")
                                             cell_paragraph.add_run("[GÖRSEL]")
     else:
-        print("'elements' could not be found in the XML.")
-        exit()
+        raise Exception("'elements' could not be found in the XML.")
 
     # Save the document
     document.save(docx_file)
@@ -589,13 +584,13 @@ def udf_to_docx(udf_file, docx_file):
 def main():
     if len(sys.argv) < 2:
         print("Usage: python udf_to_docx.py input.udf")
-        exit()
+        sys.exit(1)
 
     udf_file = sys.argv[1]
 
     if not os.path.isfile(udf_file):
         print(f"Input file not found: {udf_file}")
-        exit()
+        sys.exit(1)
 
     filename, ext = os.path.splitext(udf_file)
 
