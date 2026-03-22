@@ -1,0 +1,33 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install python-docx PyMuPDF Pillow reportlab pyinstaller
+
+    - name: Build EXE
+      run: |
+        pyinstaller --noconfirm --onefile --windowed --clean --name "UDF-Cevirici" --add-data "udf_to_docx.py;." --add-data "udf_to_pdf.py;." --add-data "docx_to_udf.py;." --add-data "scanned_pdf_to_udf.py;." --add-data "main.py;." --add-data "paragraph_processor.py;." --add-data "table_processor.py;." --add-data "image_processor.py;." --add-data "utils.py;." --exclude-module numpy --exclude-module pandas --exclude-module matplotlib --exclude-module scipy --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module IPython --exclude-module pytest gui_app.py
+
+    - name: Upload EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: UDF-Cevirici
+        path: dist/UDF-Cevirici.exe

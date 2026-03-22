@@ -14,15 +14,55 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 
-# Add fonts that support Turkish characters with bold and italic variations
-pdfmetrics.registerFont(TTFont('DejaVuSerif', 'DejaVuSerif.ttf'))
-pdfmetrics.registerFont(TTFont('DejaVuSerif-Bold', 'DejaVuSerif-Bold.ttf'))
-pdfmetrics.registerFont(TTFont('DejaVuSerif-Italic', 'DejaVuSerif-Italic.ttf'))
-pdfmetrics.registerFont(TTFont('DejaVuSerif-BoldItalic', 'DejaVuSerif-BoldItalic.ttf'))
+# Try to register DejaVuSerif fonts; fall back to Helvetica if not found
+FONT_NAME = 'Helvetica'  # default fallback
+FONT_BOLD = 'Helvetica-Bold'
+FONT_ITALIC = 'Helvetica-Oblique'
+FONT_BOLDITALIC = 'Helvetica-BoldOblique'
 
-# Create font family
-pdfmetrics.registerFontFamily('DejaVuSerif', normal='DejaVuSerif', bold='DejaVuSerif-Bold',
-                             italic='DejaVuSerif-Italic', boldItalic='DejaVuSerif-BoldItalic')
+def _find_font(name):
+    """Search for a font file in common locations."""
+    search_dirs = [
+        os.path.dirname(os.path.abspath(__file__)),  # script dir
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts'),
+        '/usr/share/fonts/truetype/dejavu',
+        '/usr/share/fonts/dejavu',
+        'C:\\Windows\\Fonts',
+        os.path.expanduser('~/Library/Fonts'),
+        '/Library/Fonts',
+        '/System/Library/Fonts',
+    ]
+    for d in search_dirs:
+        path = os.path.join(d, name)
+        if os.path.isfile(path):
+            return path
+    return None
+
+try:
+    paths = {
+        'DejaVuSerif': _find_font('DejaVuSerif.ttf'),
+        'DejaVuSerif-Bold': _find_font('DejaVuSerif-Bold.ttf'),
+        'DejaVuSerif-Italic': _find_font('DejaVuSerif-Italic.ttf'),
+        'DejaVuSerif-BoldItalic': _find_font('DejaVuSerif-BoldItalic.ttf'),
+    }
+    if all(paths.values()):
+        pdfmetrics.registerFont(TTFont('DejaVuSerif', paths['DejaVuSerif']))
+        pdfmetrics.registerFont(TTFont('DejaVuSerif-Bold', paths['DejaVuSerif-Bold']))
+        pdfmetrics.registerFont(TTFont('DejaVuSerif-Italic', paths['DejaVuSerif-Italic']))
+        pdfmetrics.registerFont(TTFont('DejaVuSerif-BoldItalic', paths['DejaVuSerif-BoldItalic']))
+        pdfmetrics.registerFontFamily('DejaVuSerif', normal='DejaVuSerif', bold='DejaVuSerif-Bold',
+                                     italic='DejaVuSerif-Italic', boldItalic='DejaVuSerif-BoldItalic')
+        FONT_NAME = 'DejaVuSerif'
+        FONT_BOLD = 'DejaVuSerif-Bold'
+        FONT_ITALIC = 'DejaVuSerif-Italic'
+        FONT_BOLDITALIC = 'DejaVuSerif-BoldItalic'
+        print("DejaVuSerif fontlari basariyla yuklendi.")
+    else:
+        missing = [k for k, v in paths.items() if v is None]
+        print(f"Uyari: Bazi DejaVuSerif fontlari bulunamadi ({', '.join(missing)}). Helvetica kullanilacak.")
+except Exception as e:
+    print(f"Uyari: Font yuklemesi sirasinda hata: {e}. Helvetica kullanilacak.")
+
 
 def is_zip_file(file_path):
     """Check if the file is a valid ZIP file"""
@@ -167,11 +207,11 @@ def udf_to_pdf(udf_file, pdf_file):
         pdf_elements = []
         styles = getSampleStyleSheet()
         
-        # Define a base style that supports Turkish characters - default to DejaVuSerif
+        # Define a base style that supports Turkish characters
         base_style = ParagraphStyle(
             'CustomNormal', 
             parent=styles['Normal'],
-            fontName='DejaVuSerif',  # Setting DejaVuSerif as default font
+            fontName=FONT_NAME,
             encoding='utf-8'
         )
         
@@ -180,14 +220,14 @@ def udf_to_pdf(udf_file, pdf_file):
         if styles_element is not None:
             for style_elem in styles_element.findall('style'):
                 style_name = style_elem.get('name', '')
-                style_family = style_elem.get('family', 'DejaVuSerif')
+                style_family = style_elem.get('family', FONT_NAME)
                 style_size = float(style_elem.get('size', '12'))
                 style_bold = style_elem.get('bold', 'false') == 'true'
                 style_italic = style_elem.get('italic', 'false') == 'true'
                 style_foreground = convert_color(style_elem.get('foreground'))
                 
-                # Create the style - always use DejaVuSerif
-                style_family = 'DejaVuSerif'
+                # Create the style - use detected/fallback font
+                style_family = FONT_NAME
                     
                 custom_style = ParagraphStyle(
                     style_name,
@@ -226,10 +266,9 @@ def udf_to_pdf(udf_file, pdf_file):
             size = content_elem.get('size')
             foreground = convert_color(content_elem.get('foreground'))
             
-            # Apply text formatting - always use DejaVuSerif regardless of what's specified
+            # Apply text formatting - use detected/fallback font
             if family:
-                # Ignore the family from XML and always use DejaVuSerif
-                current_style.fontName = 'DejaVuSerif'
+                current_style.fontName = FONT_NAME
             if size:
                 current_style.fontSize = float(size)
             if foreground:
@@ -266,8 +305,8 @@ def udf_to_pdf(udf_file, pdf_file):
             first_line_indent = float(para_elem.get('FirstLineIndent', '0'))
             line_spacing = float(para_elem.get('LineSpacing', '1.2'))
             
-            # Get paragraph font family - always use DejaVuSerif regardless of what's in the XML
-            family = 'DejaVuSerif'
+            # Get paragraph font family - use detected/fallback font
+            family = FONT_NAME
             size = float(para_elem.get('size', '12'))
             
             # Create a custom style for this paragraph
